@@ -1,3 +1,8 @@
+"""
+This module enable direct upload of astropy tables
+into the DESDM database.
+
+"""
 import sys
 
 def requirements(missing):
@@ -55,7 +60,7 @@ https://cdcvs.fnal.gov/redmine/projects/deswlwg/wiki/Accessing_catalogs_from_DES
 """)
 	sys.exit(1)
 
-class FitsUploaderConnection(desdb.Connection):
+class TableUploaderConnection(desdb.Connection):
 	def create_table(self, table_name, fields, primary=None):
 		table_info = ', '.join(["{0}  {1} NOT NULL ".format(*field) for field in fields])
 
@@ -202,7 +207,7 @@ if __name__=="__main__":
 	filenames = glob.glob(args.filename_base+"*")
 	filenames.sort()
 
-	connection = FitsUploaderConnection()
+	connection = TableUploaderConnection()
 	filenames = filenames[args.start:args.start+args.count]
 	extra=None
 
