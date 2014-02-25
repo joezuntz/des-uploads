@@ -61,7 +61,7 @@ https://cdcvs.fnal.gov/redmine/projects/deswlwg/wiki/Accessing_catalogs_from_DES
 	sys.exit(1)
 
 class TableUploaderConnection(desdb.Connection):
-	def create_table(self, table_name, fields, primary=None):
+	def create_table(self, table_name, fields, primary=None, public=False):
 		table_info = ', '.join(["{0}  {1} NOT NULL ".format(*field) for field in fields])
 
 		if isinstance(primary,basestring):
@@ -75,6 +75,8 @@ class TableUploaderConnection(desdb.Connection):
 		print query
 		self.quick(query)
 		self.quick("commit")
+		if public:
+			self.quick("grant select on {0} to des_reader".format(table_name))
 
 	def delete_table(self, table_name):
 		self.quick("drop table {0}".format(table_name))
@@ -153,13 +155,13 @@ class TableUploaderConnection(desdb.Connection):
 			oracle_types.append(oracle_type)
 		return oracle_types
 
-	def create_table_from_table(self, table, table_name, extra_cols,primary=None):
+	def create_table_from_table(self, table, table_name, extra_cols,primary=None, public=False):
 		print "Creating table ",table_name
 		names = list(table.colnames)
 		oracle_types = self.type_codes_for_table(table)
 		fields = [(name,oracle_type) for (name,oracle_type) in zip(names, oracle_types)]
 		fields += extra_cols
-		self.create_table(table_name, fields, primary=primary)
+		self.create_table(table_name, fields, primary=primary, public=public)
 
 	def guess_file_format(self, filename):
 		if filename.lower().endswith('fits') or filename.lower().endswith('fit'):
@@ -168,7 +170,7 @@ class TableUploaderConnection(desdb.Connection):
 			return 'ssv'
 
 	def upload_collection(self, table_name, filenames, format=None, create=False, 
-			primary=None, cut_duplicates=False, extension=0, tilename_col=False):
+			primary=None, cut_duplicates=False, extension=0, tilename_col=False, public=False):
 		for filename in filenames:
 			assert os.path.exists(filename)
 
@@ -199,7 +201,8 @@ parser.add_argument("--create", action='store_true', default=False, help='Create
 parser.add_argument("-p", "--primary", type=str, nargs='+',default=[], help='Create the table')
 parser.add_argument("-k", "--remove-duplicates", action='store_true', default=False, help='remove duplicated primary keys')
 parser.add_argument("-j", "--extension", type=int, default=None, help='extension to get data from')
-parser.add_argument("-t", "--tilename-col", action='store_true', help='Add a tilename field from the ')
+parser.add_argument("-t", "--tilename-col", action='store_true', help='Add a tilename field based on the filename')
+parser.add_argument("-u", "--public", action='store_true', help='Make the table public (if you are just creating it; no effect otherwise)')
 
 
 if __name__=="__main__":
@@ -214,5 +217,5 @@ if __name__=="__main__":
 	connection.upload_collection(args.table_name, filenames, 
 		create=args.create, primary=args.primary, 
 		cut_duplicates=args.remove_duplicates, extension=args.extension, 
-		tilename_col=args.tilename_col)
+		tilename_col=args.tilename_col, public=args.public)
 
