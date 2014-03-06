@@ -131,7 +131,7 @@ class TableUploaderConnection(desdb.Connection):
 		if extra:
 			key,value=extra.split("=")
 			names.append(key)
-			arrays.append(np.repeat(value,len(table)))
+			arrays.append(np.repeat(value,len(arrays[0])))
 
 		self.insert_data(table_name, names, arrays)
 
