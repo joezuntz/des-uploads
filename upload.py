@@ -114,7 +114,7 @@ class TableUploaderConnection(desdb.Connection):
 			primary = [primary]		
 		if cut_duplicates:
 			assert primary is not None, "Require a primary key to remove duplicates"
-			key_fields = [data[p] for p in primary]
+			key_fields = [table[p] for p in primary]
 			mask = []
 			seen = set()
 			for i in xrange(len(key_fields[0])):
