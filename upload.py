@@ -179,7 +179,7 @@ class TableUploaderConnection(desdb.Connection):
 			if tilename_col:
 				extra_cols = [('TILENAME','VARCHAR(12)')]
 				tilename = re.search(tile_regex, filename).group()
-				extra = 'TILENAME={tilename}'
+				extra = 'TILENAME={0}'.format(tilename)
 			else:
 				extra_cols = []
 				extra=None
