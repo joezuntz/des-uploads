@@ -95,6 +95,7 @@ class TableUploaderConnection(desdb.Connection):
 					continue
 				subarrays = [a[start:finish] for a in arrays]
 				self.insert_data(table_name, names, subarrays)
+			return
 
 		ncol = len(names)
 		for array in arrays:
