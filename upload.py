@@ -1,4 +1,4 @@
-w"""
+"""
 This module enable direct upload of astropy tables
 into the DESDM database.
 
