@@ -1,4 +1,4 @@
-"""
+w"""
 This module enable direct upload of astropy tables
 into the DESDM database.
 
@@ -41,6 +41,7 @@ import itertools
 import re
 
 tile_regex = re.compile('DES\d\d\d\d-\d\d\d\d')
+MAX_NUMBER_ROWS = 250000
 
 
 try:
@@ -83,6 +84,18 @@ class TableUploaderConnection(desdb.Connection):
 
 	def insert_data(self, table_name, names, arrays):
 		nrow = len(arrays[0])
+		if nrow > MAX_NUMBER_ROWS:
+			n_split = (nrow//MAX_NUMBER_ROWS)+1
+			print 'Splitting upload into %d' % n_split
+			for i in xrange(n_split):
+				start = MAX_NUMBER_ROWS*i
+				finish = min(start+MAX_NUMBER_ROWS, nrow)
+				if start>=finish:
+					#handle the case where nrow is exact multiple of MAX
+					continue
+				subarrays = [a[start:finish] for a in arrays]
+				self.insert_data(table_name, names, subarrays)
+
 		ncol = len(names)
 		for array in arrays:
 			assert len(array) == nrow
