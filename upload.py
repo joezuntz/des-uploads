@@ -149,6 +149,20 @@ class TableUploaderConnection(desdb.Connection):
 
 		self.insert_data(table_name, names, arrays)
 
+	def insert_new_column(self, table_name, column_name, column_array, match_name, match_array):
+		#Create the new column
+		column_dtype = column_array.dtype.kind
+		type_code = {'f':'binary_double', 'i':'integer','S':'varchar'}
+		add_column_sql = "alter table {table_name} add ( {column_name} {type_code})".format(**local())
+		self.quick(add_column_sql)
+
+		#Fill in the values
+		update_sql = "update {table_name} set {column_name}  = :0 where {match_name} = :1".format(**locals())
+		rows = zip([column_array, match_array])
+		self.executemany(update_sql, rows)
+		self.commit()
+
+
 	def table_with_format(self, filename, format, extension):
 		if format is None:
 			format=self.guess_file_format(filename)
