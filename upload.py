@@ -40,7 +40,7 @@ import glob
 import itertools
 import re
 
-tile_regex = re.compile('DES\d\d\d\d-\d\d\d\d')
+tile_regex = re.compile('DES\d\d\d\d[+-]\d\d\d\d')
 MAX_NUMBER_ROWS = 250000
 
 
