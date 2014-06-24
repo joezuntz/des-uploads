@@ -149,18 +149,27 @@ class TableUploaderConnection(desdb.Connection):
 
 		self.insert_data(table_name, names, arrays)
 
-	def insert_new_column(self, table_name, column_name, column_array, match_name, match_array):
+	def insert_new_column(self, table_name, column_name, column_array, match_name, match_array, create=False):
 		#Create the new column
 		column_dtype = column_array.dtype.kind
-		type_code = {'f':'binary_double', 'i':'integer','S':'varchar'}
-		add_column_sql = "alter table {table_name} add ( {column_name} {type_code})".format(**local())
-		self.quick(add_column_sql)
-
+		type_code = {'f':'binary_double', 'i':'integer','S':'varchar'}[column_dtype]
+		add_column_sql = "alter table {table_name} add ( {column_name} {type_code})".format(**locals())
+		if create:
+			print add_column_sql
+			self.quick(add_column_sql)
+		column_array = column_array.tolist()
+		match_array = match_array.tolist()
 		#Fill in the values
-		update_sql = "update {table_name} set {column_name}  = :0 where {match_name} = :1".format(**locals())
-		rows = zip([column_array, match_array])
-		self.executemany(update_sql, rows)
+		update_sql = "update {table_name} set {column_name}  = :1 where {match_name} = :2".format(**locals())
+		rows = zip(column_array, match_array)
+
+		types = [type(column_array[0]), type(match_array[0])]
+                cursor = self.cursor()
+		cursor.bindarraysize = len(column_array)
+		cursor.setinputsizes(*types)
+		cursor.executemany(update_sql, rows)
 		self.commit()
+		cursor.close()
 
 
 	def table_with_format(self, filename, format, extension):
@@ -179,7 +188,7 @@ class TableUploaderConnection(desdb.Connection):
 		for i,type_code in enumerate(type_codes):
 			oracle_type = type_map[type_code]
 			if oracle_type=='varchar':
-				oracle_type += '(%d)'%table.columns[i].dtype.itemsize
+				oracle_type += '(%d)'%max(table.columns[i].dtype.itemsize,12)
 			oracle_types.append(oracle_type)
 		return oracle_types
 
