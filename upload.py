@@ -63,7 +63,15 @@ https://cdcvs.fnal.gov/redmine/projects/deswlwg/wiki/Accessing_catalogs_from_DES
 
 class TableUploaderConnection(desdb.Connection):
 	def create_table(self, table_name, fields, primary=None, public=False):
-		table_info = ', '.join(["{0}  {1} NOT NULL ".format(*field) for field in fields])
+#		table_info = ', '.join(["{0}  {1} NOT NULL ".format(*field) for field in fields])
+		table_info = []
+		for field in fields:
+			info_slot="{0}  {1}".format(*field)
+			if not 'varchar' in field[1].lower():
+				info_slot+=" NOT NULL "
+			table_info.append(info_slot)
+		table_info=', '.join(table_info)
+				
 
 		if isinstance(primary,basestring):
 			primary = [primary]
@@ -188,7 +196,7 @@ class TableUploaderConnection(desdb.Connection):
 		for i,type_code in enumerate(type_codes):
 			oracle_type = type_map[type_code]
 			if oracle_type=='varchar':
-				oracle_type += '(%d)'%max(table.columns[i].dtype.itemsize,12)
+				oracle_type += '(%d)'%max(table.columns[i].dtype.itemsize,16)
 			oracle_types.append(oracle_type)
 		return oracle_types
 
