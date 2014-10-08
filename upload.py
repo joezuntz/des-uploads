@@ -214,52 +214,58 @@ class TableUploaderConnection(desdb.Connection):
 		else:
 			return 'ssv'
 
+	def upload_file_segment(self, table_name, filename, start=None, end=None, format=None, create=False, 
+			primary=None, cut_duplicates=False, extension=0, tilename_col=False, public=False):
+
+		assert os.path.exists(filename)
+
+		table = self.table_with_format(filename, format, extension)
+		if tilename_col:
+			extra_cols = [('TILENAME','VARCHAR(12)')]
+			tilename = re.search(tile_regex, filename).group()
+			extra = 'TILENAME={0}'.format(tilename)
+		else:
+			extra_cols = []
+			extra=None
+		if create:
+			self.create_table_from_table(table, table_name, extra_cols, primary=primary)
+		if start is None: start = 0
+		if end is None: end = len(table)
+		print "Uploading {0} to {1} [{2}-{3}]".format(filename, table_name, start, end)
+		table = table[start:end]
+		self.insert_table(table_name, table, primary=primary, cut_duplicates=cut_duplicates, extra=extra)
+
+
 	def upload_collection(self, table_name, filenames, format=None, create=False, 
 			primary=None, cut_duplicates=False, extension=0, tilename_col=False, public=False):
-		for filename in filenames:
-			assert os.path.exists(filename)
-
 		for i,filename in enumerate(filenames):
-			table = self.table_with_format(filenames[0], format, extension)
-			if tilename_col:
-				extra_cols = [('TILENAME','VARCHAR(12)')]
-				tilename = re.search(tile_regex, filename).group()
-				extra = 'TILENAME={0}'.format(tilename)
-			else:
-				extra_cols = []
-				extra=None
-			if i==0 and create:
-				self.create_table_from_table(table, table_name, extra_cols, primary=primary)
-			print "Uploading {0} to {1}".format(filename, table_name)
-			self.insert_table(table_name, table, primary=primary, cut_duplicates=cut_duplicates, extra=extra)
-
+			if i>0 create=False
+			self.update_file_segment(table_name, filename, None, None, format, create, 
+			primary, cut_duplicates, extension, tilename_col, public)
 
 			
 
 import argparse
 parser = argparse.ArgumentParser(description="Upload some FITS files to an oracle database.  This crashes often because cx_Oracle is crap.")
-parser.add_argument('filename_base', help='Upload all files that start with this')
+parser.add_argument('filename', help='File name to upload')
 parser.add_argument('table_name', help='Name of Oracle table')
-parser.add_argument("-s", "--start", type=int, default=0, help='first file in list to process')
-parser.add_argument("-n", "--count", type=int, default=100000000000, help='number of files to process')
 parser.add_argument("--create", action='store_true', default=False, help='Create the table')
 parser.add_argument("-p", "--primary", type=str, nargs='+',default=[], help='Create the table')
 parser.add_argument("-k", "--remove-duplicates", action='store_true', default=False, help='remove duplicated primary keys')
 parser.add_argument("-j", "--extension", type=int, default=None, help='extension to get data from')
 parser.add_argument("-t", "--tilename-col", action='store_true', help='Add a tilename field based on the filename')
 parser.add_argument("-u", "--public", action='store_true', help='Make the table public (if you are just creating it; no effect otherwise)')
+parser.add_argument("--start", type=int, default=None, help='First row to upload (single file only)')
+parser.add_argument("--end", type=int, default=None, help='Last row to upload (single file only)')
 
 
 if __name__=="__main__":
 	args = parser.parse_args()
-	filenames = glob.glob(args.filename_base+"*")
-	filenames.sort()
 
 	connection = TableUploaderConnection()
-	filenames = filenames[args.start:args.start+args.count]
-	extra=None
 
-	connection.upload_collection(args.table_name, filenames, 
+	connection.upload_collection(args.table_name, args.filename, 
+		start=args.start, end=args.end,
 		create=args.create, primary=args.primary, 
 		cut_duplicates=args.remove_duplicates, extension=args.extension, 
 		tilename_col=args.tilename_col, public=args.public)
