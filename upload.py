@@ -214,7 +214,7 @@ class TableUploaderConnection(desdb.Connection):
 		else:
 			return 'ssv'
 
-	def upload_file_segment(self, table_name, filename, start=None, end=None, format=None, create=False, 
+	def upload_file(self, table_name, filename, start=None, end=None, format=None, create=False, 
 			primary=None, cut_duplicates=False, extension=0, tilename_col=False, public=False):
 
 		assert os.path.exists(filename)
@@ -239,7 +239,7 @@ class TableUploaderConnection(desdb.Connection):
 	def upload_collection(self, table_name, filenames, format=None, create=False, 
 			primary=None, cut_duplicates=False, extension=0, tilename_col=False, public=False):
 		for i,filename in enumerate(filenames):
-			if i>0 create=False
+			if i>0: create=False
 			self.update_file_segment(table_name, filename, None, None, format, create, 
 			primary, cut_duplicates, extension, tilename_col, public)
 
@@ -264,7 +264,7 @@ if __name__=="__main__":
 
 	connection = TableUploaderConnection()
 
-	connection.upload_collection(args.table_name, args.filename, 
+	connection.upload_file(args.table_name, args.filename, 
 		start=args.start, end=args.end,
 		create=args.create, primary=args.primary, 
 		cut_duplicates=args.remove_duplicates, extension=args.extension, 
